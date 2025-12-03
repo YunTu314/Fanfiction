@@ -3,19 +3,30 @@
     <el-aside width="200px" class="aside-menu">
       <el-menu :default-active="activeMenu" class="el-menu-vertical-demo" @select="handleMenuSelect" router>
         <h3 class="menu-title">📚 小说创作助手</h3>
-        
+
         <el-menu-item index="/calendar">
-          <el-icon><Calendar /></el-icon>
+          <el-icon>
+            <Calendar />
+          </el-icon>
           <span>时间线/日历</span>
         </el-menu-item>
-        
+
         <el-menu-item index="/characters">
-          <el-icon><UserFilled /></el-icon>
+          <el-icon>
+            <UserFilled />
+          </el-icon>
           <span>角色人设</span>
         </el-menu-item>
-
+        <el-menu-item index="/outline">
+          <el-icon>
+            <Management />
+          </el-icon>
+          <span>剧情大纲</span>
+        </el-menu-item>
         <el-menu-item index="/writing">
-          <el-icon><Edit /></el-icon>
+          <el-icon>
+            <Edit />
+          </el-icon>
           <span>写作</span>
         </el-menu-item>
       </el-menu>
@@ -60,7 +71,8 @@ const handleMenuSelect = (index: string) => {
 <style scoped>
 /* 样式保持不变 */
 .common-layout {
-  height: 100vh; /* 强制占满视口高度 */
+  height: 100vh;
+  /* 强制占满视口高度 */
   width: 100vw;
   overflow: hidden;
 }
@@ -94,9 +106,10 @@ const handleMenuSelect = (index: string) => {
 
 .main-content {
   /* 修改这里：去除 padding，让内部组件自己决定边距，以便计算高度 */
-  padding: 10; 
+  padding: 10;
   background-color: #f0f2f5;
-  overflow: hidden; /* 禁止主内容区滚动，强制内容自适应 */
+  overflow: hidden;
+  /* 禁止主内容区滚动，强制内容自适应 */
   display: flex;
   flex-direction: column;
 }

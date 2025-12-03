@@ -85,7 +85,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed } from 'vue';
+import { ref, computed ,onMounted} from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Calendar, List } from '@element-plus/icons-vue';
 
@@ -97,6 +97,9 @@ import StoryTimeline from '@/components/StoryTimeline.vue';
 import type { StoryEvent } from '@/types';
 import { CHARACTER_OPTIONS } from '@/constants/characters';
 import { INITIAL_EVENTS } from '@/constants/events';
+
+import { useRoute } from 'vue-router';
+const route = useRoute();
 
 // --- 状态 ---
 const viewMode = ref<'calendar' | 'timeline'>('calendar');
@@ -124,6 +127,17 @@ const loadInitialData = () => {
   });
 };
 loadInitialData();
+
+onMounted(() => {
+  // 检查 URL 是否带有 date 参数
+  if (route.query.date) {
+    const targetDate = new Date(route.query.date as string);
+    if (!isNaN(targetDate.getTime())) {
+      currentDate.value = targetDate; // 设置日历当前日期
+      handleDayClick(route.query.date as string); // 自动触发点击，弹出事件列表
+    }
+  }
+});
 
 // --- 计算属性 ---
 const currentDayEvents = computed(() => storyEvents.value.get(currentEvent.value.date) || []);

@@ -18,7 +18,8 @@
     "element-plus": "^2.11.9",
     "japanese-holidays": "^1.0.10",
     "vue": "^3.5.25",
-    "vue-router": "^4.6.3"
+    "vue-router": "^4.6.3",
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",
