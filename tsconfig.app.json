@@ -1,0 +1,23 @@
+// tsconfig.app.json
+
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "src/**/*.vue",
+    "src/**/*.js",
+    "src/**/*.jsx",
+    // 添加这一行，确保自动生成的类型文件被包含
+    "components.d.ts"
+  ],
+  "exclude": ["node_modules"],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*" // 告诉 TypeScript，任何以 @/ 开头的路径都指向 src/ 目录
+      ]
+    }
+  }
+}
