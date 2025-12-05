@@ -7,7 +7,6 @@ export const getHolidayInfo = (dateStrOrDate: string | Date): HolidayInfo | null
   const date = new Date(dateStrOrDate);
   const englishName = JapaneseHolidays.isHoliday(date);
   
-  console.log("englishName",englishName);
   
   if (!englishName) return null;
 

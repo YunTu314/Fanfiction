@@ -98,6 +98,8 @@ import type { StoryEvent } from '@/types';
 import { CHARACTER_OPTIONS } from '@/constants/characters';
 import { INITIAL_EVENTS } from '@/constants/events';
 
+
+
 import { useRoute } from 'vue-router';
 const route = useRoute();
 
@@ -120,12 +122,18 @@ const formEvent = ref<StoryEvent>({ ...initialEvent }); // 表单数据
 
 // --- 初始化数据 ---
 const loadInitialData = () => {
+  // 清空现有 Map，防止重复
+  storyEvents.value.clear(); 
+  
   INITIAL_EVENTS.forEach(event => {
+    // 检查 map 中是否已有该日期的数组
     const existing = storyEvents.value.get(event.date) || [];
     existing.push(event);
     storyEvents.value.set(event.date, existing);
   });
 };
+
+// 3. 执行初始化
 loadInitialData();
 
 onMounted(() => {

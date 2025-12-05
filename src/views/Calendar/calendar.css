@@ -1,0 +1,47 @@
+/* src/views/Calendar/calendar.css */
+
+.view-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  padding: 10px 20px;
+  box-sizing: border-box;
+  background-color: #fff;
+  overflow: hidden;
+}
+
+.view-toolbar {
+  flex-shrink: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.current-date-label {
+  font-size: 16px;
+  font-weight: bold;
+  margin-right: 15px;
+}
+
+.view-content {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}

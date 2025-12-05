@@ -14,25 +14,25 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/calendar',
     name: 'Calendar',
-    component: CalendarView,
+    component: () => import('@/views/Calendar/Calendar.vue'),
     meta: { title: '时间线/日历' },
   },
   {
     path: '/characters',
     name: 'Characters',
-    component: CharactersView,
+    component: () => import('@/views/Characters/Characters.vue'),
     meta: { title: '角色人设' },
   },
   {
     path: '/outline',
     name: 'Outline',
-    component: OutlineView,
+    component: () => import('@/views/Outline/Outline.vue'),
     meta: { title: '剧情大纲' },
   },
   {
     path: '/writing',
     name: 'Writing',
-    component: WritingView,
+    component: () => import('@/views/Writing/Writing.vue'),
     meta: { title: '写作' },
   },
 ];
