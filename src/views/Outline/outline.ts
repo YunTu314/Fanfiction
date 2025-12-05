@@ -3,7 +3,6 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { OutlineChapter, OutlineScene, OutlineTag } from '@/types';
-import { INITIAL_OUTLINE } from '@/constants/outline';
 
 const STORAGE_KEY = 'fanfic_outline_data';
 const INBOX_ID = 'inbox_chapter';
@@ -52,14 +51,15 @@ export function useOutline() {
       try {
         allChapters.value = JSON.parse(cached);
       } catch (e) {
-        console.error('缓存数据损坏，重置为默认');
-        allChapters.value = JSON.parse(JSON.stringify(INITIAL_OUTLINE));
+        console.error('缓存数据损坏', e);
+        allChapters.value = [];
       }
     } else {
-      allChapters.value = JSON.parse(JSON.stringify(INITIAL_OUTLINE));
+      // 修改：默认不加载 INITIAL_OUTLINE，只初始化空数组
+      allChapters.value = [];
     }
 
-    // 确保 Inbox 存在
+    // 确保 Inbox 存在 (Inbox 是结构必须的)
     if (!allChapters.value.find(c => c.id === INBOX_ID)) {
       allChapters.value.unshift({
         id: INBOX_ID,
@@ -72,9 +72,10 @@ export function useOutline() {
   };
 
   const resetData = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    loadData();
-    ElMessage.success('数据已重置');
+    // 修改：清空除 Inbox 外的所有数据
+    allChapters.value = allChapters.value.filter(c => c.id === INBOX_ID);
+    saveData();
+    ElMessage.success('数据已清空');
   };
 
   // --- 导出功能 ---
@@ -117,20 +118,27 @@ export function useOutline() {
           throw new Error('格式错误：缺少必要的字段');
         }
 
-        allChapters.value = parsedData;
-        
-        if (!allChapters.value.find(c => c.id === INBOX_ID)) {
-          allChapters.value.unshift({
-            id: INBOX_ID,
-            title: '灵感收集箱',
-            description: '未分类的灵感暂存处',
-            isExpanded: true,
-            scenes: []
-          });
-        }
+        // 覆盖导入
+        ElMessageBox.confirm(
+          '导入操作将覆盖当前所有大纲数据，确定吗？',
+          '确认导入',
+          { type: 'warning', confirmButtonText: '覆盖导入' }
+        ).then(() => {
+          allChapters.value = parsedData;
+          // 确保 Inbox 存在
+          if (!allChapters.value.find(c => c.id === INBOX_ID)) {
+            allChapters.value.unshift({
+              id: INBOX_ID,
+              title: '灵感收集箱',
+              description: '未分类的灵感暂存处',
+              isExpanded: true,
+              scenes: []
+            });
+          }
+          saveData();
+          ElMessage.success('大纲导入成功！');
+        }).catch(() => {});
 
-        saveData();
-        ElMessage.success('大纲导入成功！');
       } catch (err) {
         console.error(err);
         ElMessage.error('导入失败：文件格式不正确');
@@ -272,7 +280,6 @@ export function useOutline() {
     router.push({ path: '/calendar', query: { date } });
   };
 
-  // --- 样式辅助 ---
   const formatDateShort = (dateStr: string) => dateStr.slice(5);
   const getTagColor = (tag: OutlineTag) => {
     switch (tag) {

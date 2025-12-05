@@ -10,9 +10,27 @@
           <el-button type="primary" icon="Plus" @click="openAddDialog">
             新增角色
           </el-button>
+          
+          <el-tooltip content="导入 JSON 数据" placement="top">
+            <el-button type="warning" plain icon="Upload" @click="triggerImport">导入</el-button>
+          </el-tooltip>
+          <input 
+            type="file" 
+            ref="fileInputRef" 
+            style="display: none" 
+            accept=".json" 
+            @change="handleImport" 
+          />
+
           <el-button type="success" plain icon="Download" @click="handleExport">
-            导出数据
+            导出
           </el-button>
+          
+          <el-popconfirm title="确定清空所有角色数据吗？此操作无法撤销。" @confirm="resetData">
+            <template #reference>
+              <el-button type="danger" link>清空数据</el-button>
+            </template>
+          </el-popconfirm>
         </div>
       </div>
       
@@ -44,17 +62,28 @@
           @click="showDetail(char)"
         >
           <div class="card-cover" :style="{ backgroundColor: char.color }">
-            <div class="char-role">{{ char.role }}</div>
+            <div class="char-role-badge">
+              <span class="role-text">{{ char.role }}</span>
+            </div>
           </div>
           
           <div class="card-body">
-            <div class="char-name-group">
-              <h3 class="char-name">{{ char.name }}</h3>
-              <span class="char-romaji">{{ char.romaji }}</span>
+            <div class="char-header">
+              <div class="char-titles">
+                <h3 class="char-name" :style="{ color: char.color }">{{ char.name }}</h3>
+                <span class="char-romaji">{{ char.romaji }}</span>
+              </div>
             </div>
             
-            <div class="char-school">
-              <el-icon><School /></el-icon> {{ char.school }}
+            <div class="char-meta">
+              <div class="meta-row">
+                <el-icon><School /></el-icon> 
+                <span>{{ char.school }}</span>
+              </div>
+              <div class="meta-row">
+                <el-icon><User /></el-icon> 
+                <span>{{ char.basicInfo.age }} · {{ char.basicInfo.height }}</span>
+              </div>
             </div>
 
             <div class="char-tags">
@@ -64,17 +93,19 @@
                 size="small" 
                 effect="plain" 
                 round
-                :style="{ borderColor: char.color, color: '#555' }"
+                class="custom-tag"
               >
-                {{ tag }}
+                # {{ tag }}
               </el-tag>
             </div>
 
-            <p class="char-desc">{{ char.description }}</p>
+            <div class="char-desc-box">
+              <p class="char-desc">{{ char.description }}</p>
+            </div>
           </div>
         </div>
       </div>
-      <el-empty v-if="filteredCharacters.length === 0" description="未找到匹配的角色" />
+      <el-empty v-if="filteredCharacters.length === 0" description="暂无角色，请点击“新增角色”或“导入”" />
     </el-scrollbar>
 
     <el-drawer
@@ -155,12 +186,24 @@
           </el-col>
           <el-col :span="12">
             <el-form-item label="担当位置" required>
-              <el-select v-model="formChar.role" allow-create filterable default-first-option placeholder="选择或输入">
-                <el-option label="Gt." value="Gt." />
-                <el-option label="Ba." value="Ba." />
-                <el-option label="Dr." value="Dr." />
-                <el-option label="Key." value="Key." />
-                <el-option label="Vo." value="Vo." />
+              <el-select 
+                v-model="selectedRoles" 
+                multiple 
+                filterable 
+                allow-create 
+                default-first-option 
+                placeholder="可多选，如 Key. / Comp."
+                style="width: 100%"
+              >
+                <el-option label="Vo. (主唱)" value="Vo." />
+                <el-option label="Gt. (吉他)" value="Gt." />
+                <el-option label="Ba. (贝斯)" value="Ba." />
+                <el-option label="Dr. (鼓手)" value="Dr." />
+                <el-option label="Key. (键盘)" value="Key." />
+                <el-option label="Vn. (小提琴)" value="Vn." />
+                <el-option label="Dj. (DJ)" value="Dj." />
+                <el-option label="Comp. (作曲)" value="Comp." />
+                <el-option label="Lyrics (作词)" value="Lyrics" />
               </el-select>
             </el-form-item>
           </el-col>
@@ -181,7 +224,11 @@
                 allow-create
                 default-first-option
                 placeholder="输入标签回车"
-              />
+                style="width: 100%"
+              >
+                <el-option label="归国子女" value="归国子女" />
+                <el-option label="学生会长" value="学生会长" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -221,11 +268,15 @@
     </el-dialog>
   </div>
 </template>
+
 <script setup lang="ts">
-// 引入同目录下的逻辑文件
+import { computed } from 'vue';
+import { 
+  Search, School, User, Star, Document, 
+  Plus, Download, Upload, Delete, Edit 
+} from '@element-plus/icons-vue';
 import { useCharacters } from './characters';
 
-// 解构出所有状态和方法，供模板使用
 const {
   filteredCharacters,
   searchQuery,
@@ -235,14 +286,30 @@ const {
   dialogVisible,
   isEditing,
   formChar,
+  fileInputRef,
   openAddDialog,
   showDetail,
   handleEditFromDrawer,
   saveCharacter,
   handleDelete,
   resetData,
-  handleExport
+  handleExport,
+  triggerImport,
+  handleImport
 } = useCharacters();
+
+// --- 新增：处理 Role 多选的计算属性 ---
+// 数据库里存的是 "Key. / Comp." (字符串)
+// 控件里需要的是 ["Key.", "Comp."] (数组)
+const selectedRoles = computed({
+  get: () => {
+    if (!formChar.value.role) return [];
+    return formChar.value.role.split(' / ');
+  },
+  set: (val: string[]) => {
+    formChar.value.role = val.join(' / ');
+  }
+});
 </script>
 
 <style scoped src="./characters.css"></style>

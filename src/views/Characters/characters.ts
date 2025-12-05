@@ -1,7 +1,6 @@
 // src/views/Characters/characters.ts
 import { ref, computed, onMounted } from 'vue';
-import { ElMessage } from 'element-plus';
-import { CHARACTERS_DATA } from '@/constants/characters';
+import { ElMessage, ElMessageBox } from 'element-plus';
 import type { CharacterProfile } from '@/types';
 
 const STORAGE_KEY = 'fanfic_characters_data';
@@ -11,6 +10,7 @@ export function useCharacters() {
   const characters = ref<CharacterProfile[]>([]);
   const searchQuery = ref('');
   const filterRole = ref('ALL');
+  const fileInputRef = ref<HTMLInputElement | null>(null);
 
   // 详情抽屉状态
   const drawerVisible = ref(false);
@@ -49,21 +49,23 @@ export function useCharacters() {
       try {
         characters.value = JSON.parse(cached);
       } catch (e) {
-        console.error('本地数据解析失败，重置为默认', e);
-        characters.value = JSON.parse(JSON.stringify(CHARACTERS_DATA));
+        console.error('本地数据解析失败', e);
+        characters.value = [];
       }
     } else {
-      characters.value = JSON.parse(JSON.stringify(CHARACTERS_DATA));
+      // 修改：默认不再加载演示数据，而是空列表
+      characters.value = [];
     }
   };
 
   const resetData = () => {
-    characters.value = JSON.parse(JSON.stringify(CHARACTERS_DATA));
+    // 修改：重置为清空所有数据
+    characters.value = [];
     saveData();
-    ElMessage.success('已重置为初始数据');
+    ElMessage.success('数据已清空');
   };
 
-  // --- 计算属性 ---
+  // --- 计算属性：筛选 ---
   const filteredCharacters = computed(() => {
     return characters.value.filter(char => {
       const roleMatch = filterRole.value === 'ALL' || char.role.includes(filterRole.value);
@@ -78,6 +80,7 @@ export function useCharacters() {
   });
 
   // --- 交互方法 ---
+
   const openAddDialog = () => {
     formChar.value = JSON.parse(JSON.stringify(initialFormState));
     formChar.value.id = Date.now().toString();
@@ -125,7 +128,12 @@ export function useCharacters() {
     ElMessage.success('角色已删除');
   };
 
+  // --- 导出功能 ---
   const handleExport = () => {
+    if (characters.value.length === 0) {
+      ElMessage.warning('没有数据可导出');
+      return;
+    }
     try {
       const dataStr = JSON.stringify(characters.value, null, 2);
       const blob = new Blob([dataStr], { type: 'application/json' });
@@ -145,6 +153,56 @@ export function useCharacters() {
     }
   };
 
+  // --- 新增：导入功能 ---
+  const triggerImport = () => {
+    if (fileInputRef.value) {
+      fileInputRef.value.click();
+    }
+  };
+
+  const handleImport = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
+
+    const file = target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsedData = JSON.parse(content);
+
+        // 简单的数据校验
+        if (!Array.isArray(parsedData)) {
+          throw new Error('文件格式错误：必须是数组');
+        }
+        if (parsedData.length > 0 && !parsedData[0].id) {
+          throw new Error('文件格式错误：缺少 ID 字段');
+        }
+
+        // 确认覆盖
+        ElMessageBox.confirm(
+          `检测到 ${parsedData.length} 个角色数据。导入将覆盖当前列表，确定吗？`,
+          '确认导入',
+          { type: 'warning', confirmButtonText: '覆盖导入' }
+        ).then(() => {
+          characters.value = parsedData;
+          saveData();
+          ElMessage.success('导入成功！');
+        }).catch(() => {
+          // 取消导入
+        });
+
+      } catch (err) {
+        console.error(err);
+        ElMessage.error('导入失败：文件格式不正确');
+      }
+      // 清空输入框，允许重复导入同名文件
+      target.value = '';
+    };
+    reader.readAsText(file, 'utf-8');
+  };
+
   onMounted(() => {
     loadData();
   });
@@ -159,12 +217,15 @@ export function useCharacters() {
     dialogVisible,
     isEditing,
     formChar,
+    fileInputRef,
     openAddDialog,
     showDetail,
     handleEditFromDrawer,
     saveCharacter,
     handleDelete,
     resetData,
-    handleExport
+    handleExport,
+    triggerImport,
+    handleImport
   };
 }
