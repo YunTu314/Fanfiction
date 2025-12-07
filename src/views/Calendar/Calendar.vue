@@ -19,13 +19,18 @@
         <span class="current-date-label">{{ formatDateTitle(currentDate) }}</span>
         <el-button-group>
           <el-button size="small" @click="selectDate('prev-month')">上个月</el-button>
-          <el-button size="small" @click="selectDate('today')">今天</el-button>
+          <el-button size="small" @click="selectDate('today')">回到初始</el-button>
           <el-button size="small" @click="selectDate('next-month')">下个月</el-button>
         </el-button-group>
+        
+        <el-tooltip content="设置时间线起点" placement="top">
+          <el-button size="small" icon="Setting" circle style="margin-left: 12px" @click="openSettings" />
+        </el-tooltip>
       </div>
       
       <div class="toolbar-right" v-else>
         <el-tag type="info">共记录 {{ totalEventsCount }} 个事件</el-tag>
+        <el-button size="small" icon="Setting" circle style="margin-left: 12px" @click="openSettings" />
       </div>
     </div>
 
@@ -81,11 +86,35 @@
         </span>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="settingsVisible" title="日历设置" width="400px" align-center>
+      <el-form :model="formSettings" label-position="top">
+        <el-form-item label="时间线初始日期">
+          <div style="color: #909399; font-size: 12px; margin-bottom: 8px;">
+            设置每次进入此页面时默认显示的年月。
+          </div>
+          <el-date-picker
+            v-model="formSettings.startDate"
+            type="date"
+            placeholder="选择日期"
+            format="YYYY-MM-DD"
+            value-format="YYYY-MM-DD"
+            style="width: 100%"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="settingsVisible = false">取消</el-button>
+          <el-button type="primary" @click="saveSettings">保存设置</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script lang="ts" setup>
-import { Calendar, List } from '@element-plus/icons-vue';
+import { Calendar, List, Setting } from '@element-plus/icons-vue';
 import StoryCalendar from '@/components/StoryCalendar.vue';
 import StoryTimeline from '@/components/StoryTimeline.vue';
 import { useCalendar } from './calendar';
@@ -105,6 +134,12 @@ const {
   currentDayEvents,
   sortedTimelineData,
   totalEventsCount,
+  // 设置相关
+  settingsVisible,
+  formSettings,
+  openSettings,
+  saveSettings,
+  // 方法
   handleDayClick,
   quickAddEvent,
   confirmDeleteEvent,

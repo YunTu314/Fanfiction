@@ -1,6 +1,6 @@
 <template>
   <div class="writing-layout">
-    <div class="sidebar">
+    <div class="sidebar" :style="{ width: sidebarWidth + 'px' }">
       <div class="sidebar-header">
         <span class="sidebar-title">目录</span>
         <div class="sidebar-actions">
@@ -32,38 +32,63 @@
           @node-drag-end="handleDragEnd"
         >
           <template #default="{ node, data }">
-            <div class="custom-tree-node">
-              <div class="node-label">
+            <div class="custom-tree-node" :class="{ 'is-folder': data.type === 'folder' }">
+              <div class="node-main">
                 <el-icon v-if="data.type === 'folder'" class="node-icon folder"><Folder /></el-icon>
                 <el-icon v-else class="node-icon file"><Document /></el-icon>
                 
-                <el-input
-                  v-if="data.isRenaming"
-                  v-model="data.label"
-                  size="small"
-                  ref="renameInputRef"
-                  @blur="finishRename(data)"
-                  @keyup.enter="finishRename(data)"
-                  @click.stop
-                />
-                <span v-else :class="{ 'unsaved': !data.isSaved && data.type === 'file' }">{{ node.label }}</span>
+                <div class="label-wrapper">
+                  <el-input
+                    v-if="data.isRenaming"
+                    v-model="data.label"
+                    size="small"
+                    ref="renameInputRef"
+                    @blur="finishRename(data)"
+                    @keyup.enter="finishRename(data)"
+                    @click.stop
+                  />
+                  <span v-else :class="{ 'unsaved': !data.isSaved && data.type === 'file' }">{{ node.label }}</span>
+                </div>
               </div>
 
-              <el-dropdown trigger="click" @command="(cmd) => handleCommand(cmd, data)">
-                <span class="node-menu-btn" @click.stop>
-                  <el-icon><MoreFilled /></el-icon>
+              <div class="node-meta">
+                <span class="simple-stat">
+                  <template v-if="data.type === 'folder'">
+                    {{ data.children ? data.children.length : 0 }}章
+                  </template>
+                  <template v-else>
+                    {{ getFolderStatistics(data).wordCount }}
+                  </template>
                 </span>
-                <template #dropdown>
-                  <el-dropdown-menu>
-                    <el-dropdown-item v-if="data.type === 'folder'" command="addFolder">新建子文件夹</el-dropdown-item>
-                    <el-dropdown-item v-if="data.type === 'folder'" command="addFile">新建子章节</el-dropdown-item>
-                    <el-dropdown-item v-if="data.type === 'folder'" command="exportFolder" divided>导出整卷 (TXT)</el-dropdown-item>
-                    <el-dropdown-item command="rename" :divided="data.type !== 'folder'">重命名</el-dropdown-item>
-                    <el-dropdown-item v-if="data.type === 'file'" command="exportTxt">导出为 TXT</el-dropdown-item>
-                    <el-dropdown-item command="delete" style="color: #f56c6c;">删除</el-dropdown-item>
-                  </el-dropdown-menu>
-                </template>
-              </el-dropdown>
+
+                <el-dropdown trigger="click" @command="(cmd) => handleCommand(cmd, data)" popper-class="custom-dropdown-popper">
+                  <span class="node-menu-btn" @click.stop>
+                    <el-icon><MoreFilled /></el-icon>
+                  </span>
+                  <template #dropdown>
+                    <el-dropdown-menu>
+                      <div v-if="data.type === 'folder'" class="dropdown-header-info">
+                        <div class="info-title">{{ data.label }}</div>
+                        <div class="info-stats">
+                          {{ getFolderStatistics(data).fileCount }}章 
+                          {{ getFolderStatistics(data).wordCount.toLocaleString() }}字
+                        </div>
+                      </div>
+                      <div v-if="data.type === 'folder'" class="dropdown-divider"></div>
+
+                      <el-dropdown-item v-if="data.type === 'folder'" command="rename">重命名</el-dropdown-item>
+                      <el-dropdown-item v-if="data.type === 'folder'" command="addFolder">新建子文件夹</el-dropdown-item>
+                      <el-dropdown-item v-if="data.type === 'folder'" command="addFile">新建子章节</el-dropdown-item>
+                      <el-dropdown-item v-if="data.type === 'folder'" command="exportFolder">导出整卷 (TXT)</el-dropdown-item>
+                      
+                      <el-dropdown-item v-if="data.type === 'file'" command="rename">重命名</el-dropdown-item>
+                      <el-dropdown-item v-if="data.type === 'file'" command="exportTxt">导出为 TXT</el-dropdown-item>
+                      
+                      <el-dropdown-item command="delete" style="color: #f56c6c;" divided>删除</el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
             </div>
           </template>
         </el-tree>
@@ -92,7 +117,14 @@
             <div class="doc-title-wrapper">
               <el-input v-model="activeNode.label" class="doc-title-input" placeholder="章节标题" @input="markUnsaved(activeNode)" />
             </div>
-            <el-input v-model="activeNode.content" type="textarea" class="writing-textarea" placeholder="开始创作..." resize="none" @input="markUnsaved(activeNode)" />
+            <el-input 
+              v-model="activeContent"
+              @input="updateActiveContent"
+              type="textarea" 
+              class="writing-textarea" 
+              placeholder="开始创作..." 
+              resize="none" 
+            />
           </div>
           <el-empty v-else description="点击左侧目录打开文档" />
         </div>
@@ -104,16 +136,29 @@
           </div>
           <div v-if="secondaryNode" class="pane-content">
              <div class="doc-title-wrapper read-only"><h3>{{ secondaryNode.label }}</h3></div>
-             <el-input v-model="secondaryNode.content" type="textarea" class="writing-textarea" placeholder="对照内容..." resize="none" @input="markUnsaved(secondaryNode)" />
+             <el-input 
+               v-model="secondaryContent" 
+               @input="updateSecondaryContent"
+               type="textarea" 
+               class="writing-textarea" 
+               placeholder="对照内容..." 
+               resize="none" 
+             />
           </div>
           <el-empty v-else description="请选择对照文档" :image-size="60" />
         </div>
       </div>
     </div>
 
-    <el-dialog v-model="importDialog.visible" title="智能导入设置" width="600px" align-center>
+    <el-dialog 
+      v-model="importDialog.visible" 
+      title="智能导入设置" 
+      width="600px" 
+      align-center
+      v-loading="isImporting"
+      element-loading-text="正在导入中，处理大文件可能需要一点时间..."
+    >
       <el-form :model="importDialog" label-position="top">
-        
         <el-tabs v-model="importDialog.strategy" type="card">
           <el-tab-pane label="📋 指定卷名 (推荐)" name="list">
             <el-alert title="将TXT里的卷名复制到下方，一行一个。" type="success" :closable="false" style="margin-bottom:10px" />
@@ -138,24 +183,19 @@
         </el-tabs>
 
         <el-divider />
-        
         <el-form-item label="章名识别 (通用)">
           <el-input v-model="importDialog.chapRegex" placeholder="默认识别：第X章、Chapter X">
-             <template #append>
-              <el-button @click="resetRegex">重置默认</el-button>
-            </template>
+             <template #append><el-button @click="resetRegex">重置默认</el-button></template>
           </el-input>
         </el-form-item>
-
         <div class="preview-stats">
           <el-statistic title="预计分卷数" :value="importDialog.previewVolCount" />
           <el-statistic title="预计分章数" :value="importDialog.previewChapCount" />
         </div>
       </el-form>
-
       <template #footer>
-        <el-button @click="importDialog.visible = false">取消</el-button>
-        <el-button type="primary" @click="confirmImport">开始导入</el-button>
+        <el-button @click="importDialog.visible = false" :disabled="isImporting">取消</el-button>
+        <el-button type="primary" @click="confirmImport" :loading="isImporting">开始导入</el-button>
       </template>
     </el-dialog>
   </div>
@@ -168,10 +208,13 @@ import {
 import { useWriting } from './writing';
 
 const {
+  sidebarWidth,
   treeData, activeNodeId, secondaryNodeId, isDualMode, activeNode, secondaryNode, fileOptions, importDialog,
-  treeRef, fileInputRef, renameInputRef,
+  treeRef, fileInputRef, renameInputRef, isImporting,
+  // 新增/修改的状态
+  activeContent, secondaryContent, updateActiveContent, updateSecondaryContent,
   handleNodeClick, handleDragEnd, allowDrop, handleCommand, finishRename, handleHeaderAdd, markUnsaved, saveAll,
-  exportCurrentFile, triggerImport, handleFileImport, resetRegex, confirmImport
+  exportCurrentFile, triggerImport, handleFileImport, resetRegex, confirmImport,getFolderStatistics
 } = useWriting();
 </script>
 

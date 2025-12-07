@@ -10,6 +10,7 @@ import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: './', // <--- 关键！必须添加这一行，告诉 Vite 从哪个目录开始解析路径
   plugins: [
     vue(),
     AutoImport({

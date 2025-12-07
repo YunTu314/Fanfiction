@@ -1,11 +1,6 @@
 // src/router/index.ts
 
-import { createRouter, createWebHistory, RouteRecordRaw } from 'vue-router';
-import CalendarView from '../views/CalendarView.vue';
-import CharactersView from '../views/CharactersView.vue';
-import WritingView from '@/views/WritingView.vue';
-import OutlineView from '@/views/OutlineView.vue'; // 新增
-
+import { createRouter, createWebHashHistory, RouteRecordRaw } from 'vue-router';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
@@ -38,8 +33,9 @@ const routes: Array<RouteRecordRaw> = [
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
-  routes,
-});
+  // 使用 Hash 模式 (URL 会带 # 号)
+  history: createWebHashHistory(), 
+  routes
+})
 
 export default router;

@@ -1,20 +1,106 @@
-/* src/views/Writing/writing.css */
-
 .writing-layout { height: 100%; display: flex; overflow: hidden; background-color: #f5f7fa; }
 .sidebar { background-color: #fff; border-right: 1px solid #e4e7ed; display: flex; flex-direction: column; flex-shrink: 0; width: 260px; }
 .sidebar-header { height: 50px; display: flex; align-items: center; justify-content: space-between; padding: 0 15px; border-bottom: 1px solid #f2f6fc; background-color: #fafafa; }
 .sidebar-title { font-weight: bold; color: #303133; }
 .sidebar-actions { display: flex; gap: 5px; }
 .tree-scrollbar { flex: 1; padding: 10px 0; }
-.custom-tree-node { flex: 1; display: flex; align-items: center; justify-content: space-between; padding-right: 8px; font-size: 14px; overflow: hidden; }
-.node-label { display: flex; align-items: center; gap: 6px; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 树节点样式 */
+.custom-tree-node {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 8px;
+  font-size: 14px;
+  overflow: hidden;
+  height: 100%;
+}
+
+.node-main {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+
+.label-wrapper {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .node-icon { font-size: 16px; }
 .node-icon.folder { color: #E6A23C; }
 .node-icon.file { color: #409EFF; }
-.node-menu-btn { display: none; padding: 2px; border-radius: 4px; color: #909399; }
-.node-menu-btn:hover { background-color: #ecf5ff; color: #409EFF; }
-.custom-tree-node:hover .node-menu-btn { display: inline-flex; }
 .unsaved::after { content: '*'; color: #F56C6C; margin-left: 2px; }
+
+/* 元数据区：统计+菜单 */
+.node-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.simple-stat {
+  font-size: 12px;
+  color: #c0c4cc;
+  font-variant-numeric: tabular-nums;
+  margin-right: 4px;
+}
+
+/* 下拉菜单头 */
+.dropdown-header-info {
+  padding: 10px 16px;
+  background-color: #fcfcfc;
+  cursor: default;
+  min-width: 160px;
+}
+
+.info-title {
+  font-size: 14px;
+  font-weight: bold;
+  color: #303133;
+  margin-bottom: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 200px;
+}
+
+.info-stats {
+  font-size: 12px;
+  color: #909399;
+}
+
+.dropdown-divider {
+  height: 1px;
+  background-color: #dcdfe6;
+  margin: 0;
+  opacity: 0.6;
+}
+
+/* 菜单按钮 */
+.node-menu-btn {
+  display: none; 
+  padding: 4px;
+  border-radius: 4px;
+  color: #909399;
+  line-height: 1;
+}
+
+.node-menu-btn:hover {
+  background-color: #ecf5ff;
+  color: #409EFF;
+}
+
+.custom-tree-node:hover .node-menu-btn {
+  display: inline-flex;
+}
+
+/* 编辑器区域 */
 .editor-area { flex: 1; display: flex; flex-direction: column; background-color: #fff; overflow: hidden; }
 .editor-toolbar { height: 50px; border-bottom: 1px solid #e4e7ed; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; background-color: #fff; flex-shrink: 0; }
 .saved-text { color: #67C23A; font-size: 13px; display: flex; align-items: center; gap: 4px; }

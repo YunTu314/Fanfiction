@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     ElAlert: typeof import('element-plus/es')['ElAlert']
     ElAside: typeof import('element-plus/es')['ElAside']
+    ElAvatar: typeof import('element-plus/es')['ElAvatar']
     ElButton: typeof import('element-plus/es')['ElButton']
     ElButtonGroup: typeof import('element-plus/es')['ElButtonGroup']
     ElCalendar: typeof import('element-plus/es')['ElCalendar']
@@ -61,5 +62,9 @@ declare module 'vue' {
     RouterView: typeof import('vue-router')['RouterView']
     StoryCalendar: typeof import('./src/components/StoryCalendar.vue')['default']
     StoryTimeline: typeof import('./src/components/StoryTimeline.vue')['default']
+    TopNav: typeof import('./src/components/TopNav.vue')['default']
+  }
+  export interface GlobalDirectives {
+    vLoading: typeof import('element-plus/es')['ElLoadingDirective']
   }
 }
