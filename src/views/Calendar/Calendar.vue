@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: yuntu314/fanfiction/Fanfiction-78cdd7b04a75cf952a739276b92d74580a115934/src/views/Calendar/Calendar.vue
+fullContent:
 <template>
   <div class="view-container">
     <div class="view-toolbar">
@@ -29,9 +33,28 @@
       </div>
       
       <div class="toolbar-right" v-else>
-        <el-tag type="info">共记录 {{ totalEventsCount }} 个事件</el-tag>
-        <el-button size="small" icon="Setting" circle style="margin-left: 12px" @click="openSettings" />
-      </div>
+        <el-tag type="info" style="margin-right: 12px;">共记录 {{ totalEventsCount }} 个事件</el-tag>
+        
+        <el-button-group>
+          <el-tooltip content="导出事件数据" placement="top">
+            <el-button size="small" icon="Download" @click="handleExportEvents">导出</el-button>
+          </el-tooltip>
+          <el-tooltip content="导入事件数据" placement="top">
+            <el-button size="small" icon="Upload" @click="triggerImportEvents">导入</el-button>
+          </el-tooltip>
+        </el-button-group>
+        <input 
+          type="file" 
+          ref="fileInputRef" 
+          style="display: none" 
+          accept=".json" 
+          @change="handleImportEvents" 
+        />
+
+        <el-tooltip content="设置时间线起点" placement="top">
+          <el-button size="small" icon="Setting" circle style="margin-left: 12px" @click="openSettings" />
+        </el-tooltip>
+        </div>
     </div>
 
     <div class="view-content">
@@ -114,7 +137,7 @@
 </template>
 
 <script lang="ts" setup>
-import { Calendar, List, Setting } from '@element-plus/icons-vue';
+import { Calendar, List, Setting, Download, Upload } from '@element-plus/icons-vue';
 import StoryCalendar from '@/components/StoryCalendar.vue';
 import StoryTimeline from '@/components/StoryTimeline.vue';
 import { useCalendar } from './calendar';
@@ -139,6 +162,11 @@ const {
   formSettings,
   openSettings,
   saveSettings,
+  // 导入导出相关 (新增)
+  fileInputRef,
+  handleExportEvents,
+  triggerImportEvents,
+  handleImportEvents,
   // 方法
   handleDayClick,
   quickAddEvent,
@@ -152,3 +180,4 @@ const {
 </script>
 
 <style scoped src="./calendar.css"></style>
+}

@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: yuntu314/fanfiction/Fanfiction-78cdd7b04a75cf952a739276b92d74580a115934/src/types/index.ts
+fullContent:
 // src/types/index.ts
 
 export interface StoryEvent {
@@ -50,7 +54,8 @@ export interface OutlineScene {
   title: string;
   content: string;      // 大纲摘要/正文
   tag: OutlineTag;      // 节奏标签
-  date?: string;        // 关联日期 (YYYY-MM-DD)
+  date?: string;        // 开始日期 (YYYY-MM-DD)
+  endDate?: string;     // 结束日期 (YYYY-MM-DD) —— 新增字段
   characters?: string[]; // 涉及角色
 }
 
@@ -60,4 +65,5 @@ export interface OutlineChapter {
   description?: string; // 章节简介
   scenes: OutlineScene[];
   isExpanded?: boolean; // UI状态：是否展开
+}
 }

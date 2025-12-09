@@ -1,6 +1,7 @@
+
 {
   "name": "mygo",
-  "version": "0.0.0",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "engines": {
@@ -16,7 +17,7 @@
   },
   "build": {
     "appId": "com.fanfic.helper",
-    "productName": "同人创作助手",
+    "productName": "创作助手",
     "copyright": "Copyright © 2025",
     "directories": {
       "output": "release"
@@ -26,6 +27,7 @@
       "electron/**/*"
     ],
     "win": {
+      "icon": "build/icon.ico", 
       "target": [
         {
           "target": "nsis",
@@ -46,6 +48,7 @@
     "@element-plus/icons-vue": "^2.3.2",
     "element-plus": "^2.11.9",
     "japanese-holidays": "^1.0.10",
+    "pinia": "^2.3.1",
     "vue": "^3.5.25",
     "vue-router": "^4.6.3",
     "vuedraggable": "^4.1.0"

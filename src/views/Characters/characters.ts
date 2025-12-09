@@ -1,13 +1,15 @@
-// src/views/Characters/characters.ts
+
 import { ref, computed, onMounted } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { CharacterProfile } from '@/types';
-
-const STORAGE_KEY = 'fanfic_characters_data';
+import { useCharacterStore } from '@/stores/characterStore'; // 引入 Store
+import { storeToRefs } from 'pinia';
 
 export function useCharacters() {
-  // --- 核心状态 ---
-  const characters = ref<CharacterProfile[]>([]);
+  const store = useCharacterStore();
+  // 使用 storeToRefs 保持响应性
+  const { characters } = storeToRefs(store);
+
   const searchQuery = ref('');
   const filterRole = ref('ALL');
   const fileInputRef = ref<HTMLInputElement | null>(null);
@@ -38,30 +40,8 @@ export function useCharacters() {
   
   const formChar = ref<CharacterProfile>(JSON.parse(JSON.stringify(initialFormState)));
 
-  // --- 数据加载与持久化 ---
-  const saveData = () => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(characters.value));
-  };
-
-  const loadData = () => {
-    const cached = localStorage.getItem(STORAGE_KEY);
-    if (cached) {
-      try {
-        characters.value = JSON.parse(cached);
-      } catch (e) {
-        console.error('本地数据解析失败', e);
-        characters.value = [];
-      }
-    } else {
-      // 修改：默认不再加载演示数据，而是空列表
-      characters.value = [];
-    }
-  };
-
   const resetData = () => {
-    // 修改：重置为清空所有数据
-    characters.value = [];
-    saveData();
+    store.resetData();
     ElMessage.success('数据已清空');
   };
 
@@ -105,25 +85,19 @@ export function useCharacters() {
     if (!formChar.value.name) return ElMessage.error('姓名不能为空');
     
     if (isEditing.value) {
-      const index = characters.value.findIndex(c => c.id === formChar.value.id);
-      if (index !== -1) {
-        characters.value[index] = { ...formChar.value };
-        ElMessage.success('角色信息已更新');
-      }
+      store.updateCharacter({ ...formChar.value });
+      ElMessage.success('角色信息已更新');
     } else {
-      characters.value.unshift({ ...formChar.value });
+      store.addCharacter({ ...formChar.value });
       ElMessage.success('新角色已添加');
     }
     
-    saveData();
     dialogVisible.value = false;
   };
 
   const handleDelete = () => {
     if (!currentCharacter.value) return;
-    const idToDelete = currentCharacter.value.id;
-    characters.value = characters.value.filter(c => c.id !== idToDelete);
-    saveData();
+    store.deleteCharacter(currentCharacter.value.id);
     drawerVisible.value = false;
     ElMessage.success('角色已删除');
   };
@@ -153,7 +127,7 @@ export function useCharacters() {
     }
   };
 
-  // --- 新增：导入功能 ---
+  // --- 导入功能 ---
   const triggerImport = () => {
     if (fileInputRef.value) {
       fileInputRef.value.click();
@@ -172,7 +146,6 @@ export function useCharacters() {
         const content = e.target?.result as string;
         const parsedData = JSON.parse(content);
 
-        // 简单的数据校验
         if (!Array.isArray(parsedData)) {
           throw new Error('文件格式错误：必须是数组');
         }
@@ -180,35 +153,30 @@ export function useCharacters() {
           throw new Error('文件格式错误：缺少 ID 字段');
         }
 
-        // 确认覆盖
         ElMessageBox.confirm(
           `检测到 ${parsedData.length} 个角色数据。导入将覆盖当前列表，确定吗？`,
           '确认导入',
           { type: 'warning', confirmButtonText: '覆盖导入' }
         ).then(() => {
-          characters.value = parsedData;
-          saveData();
+          store.setCharacters(parsedData); // 使用 Store 更新数据
           ElMessage.success('导入成功！');
-        }).catch(() => {
-          // 取消导入
-        });
+        }).catch(() => {});
 
       } catch (err) {
         console.error(err);
         ElMessage.error('导入失败：文件格式不正确');
       }
-      // 清空输入框，允许重复导入同名文件
       target.value = '';
     };
     reader.readAsText(file, 'utf-8');
   };
 
   onMounted(() => {
-    loadData();
+    store.loadData(); // 初始化加载
   });
 
   return {
-    characters,
+    characters, // 现在的 characters 是来自 Store 的响应式 ref
     filteredCharacters,
     searchQuery,
     filterRole,

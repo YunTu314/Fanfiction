@@ -1,3 +1,4 @@
+
 // src/views/Outline/outline.ts
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
@@ -39,8 +40,20 @@ export function useOutline() {
   const currentChapterIndex = ref<number | 'inbox'>(-1); 
   const currentSceneIndex = ref(-1);
 
-  const formScene = ref<OutlineScene>({ id: '', title: '', content: '', tag: '承' });
+  // 初始化增加 endDate
+  const formScene = ref<OutlineScene>({ id: '', title: '', content: '', tag: '承', date: '', endDate: '' });
   const formChapter = ref<OutlineChapter>({ id: '', title: '', scenes: [] });
+
+  // --- 计算属性：天数统计 ---
+  const durationDays = computed(() => {
+    if (!formScene.value.date) return 0;
+    const start = new Date(formScene.value.date);
+    const end = formScene.value.endDate ? new Date(formScene.value.endDate) : start;
+    // 计算天数差，+1 是因为包含当天
+    const diffTime = Math.abs(end.getTime() - start.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)); 
+    return diffDays + 1;
+  });
 
   // --- 初始化与持久化 ---
   const saveData = () => localStorage.setItem(STORAGE_KEY, JSON.stringify(allChapters.value));
@@ -85,7 +98,7 @@ export function useOutline() {
     }
   };
 
-  // --- 新增：切换日历月份 ---
+  // --- 切换日历月份 ---
   const changeCalendarMonth = (offset: number) => {
     const d = new Date(calendarCurrentDate.value);
     if (offset === 0) {
@@ -96,9 +109,29 @@ export function useOutline() {
     calendarCurrentDate.value = d;
   };
 
+  // --- 修改：处理日期范围选择 ---
   const handleDatePicked = (day: string) => {
-    formScene.value.date = day;
-    ElMessage.success(`已关联日期：${day}`);
+    // 逻辑：
+    // 1. 如果没有开始时间，或者已经有了完整的范围（开始+结束），则重置为新的开始时间。
+    // 2. 如果只有开始时间，且点击日期在开始时间之后，设为结束时间。
+    // 3. 如果只有开始时间，且点击日期在开始时间之前，则将新点击的作为开始，原开始作为结束。
+
+    const currentStart = formScene.value.date;
+    const currentEnd = formScene.value.endDate;
+
+    if (!currentStart || (currentStart && currentEnd)) {
+      // Case 1: 新的选择开始
+      formScene.value.date = day;
+      formScene.value.endDate = ''; // 重置结束时间
+    } else {
+      // Case 2 & 3: 已有开始，选择第二个端点
+      if (day >= currentStart) {
+        formScene.value.endDate = day;
+      } else {
+        formScene.value.endDate = currentStart;
+        formScene.value.date = day;
+      }
+    }
   };
 
   const openSceneDialog = () => {
@@ -109,7 +142,8 @@ export function useOutline() {
   const addScene = (cIndex: number) => {
     currentChapterIndex.value = cIndex;
     currentSceneIndex.value = -1;
-    formScene.value = { id: Date.now().toString(), title: '', content: '', tag: '承' };
+    // 初始化时清空 date 和 endDate
+    formScene.value = { id: Date.now().toString(), title: '', content: '', tag: '承', date: '', endDate: '' };
     isEditing.value = false;
     openSceneDialog();
   };
@@ -117,7 +151,11 @@ export function useOutline() {
   const editScene = (scene: OutlineScene, cIndex: number, sIndex: number) => {
     currentChapterIndex.value = cIndex === -1 ? 'inbox' : cIndex;
     currentSceneIndex.value = sIndex;
+    // 深拷贝，防止直接修改
     formScene.value = JSON.parse(JSON.stringify(scene));
+    // 兼容旧数据：如果旧数据没有 endDate，初始化为空
+    if (!formScene.value.endDate) formScene.value.endDate = '';
+    
     isEditing.value = true;
     openSceneDialog();
   };
@@ -180,7 +218,7 @@ export function useOutline() {
   const handleQuickAdd = () => {
     if(!quickInput.value.trim()) return;
     const inbox = allChapters.value.find(c=>c.id===INBOX_ID);
-    if(inbox) { inbox.scenes.unshift({id:Date.now().toString(), title:quickInput.value, content:'', tag:'伏笔'}); saveData(); quickInput.value=''; ElMessage.success('已添加'); }
+    if(inbox) { inbox.scenes.unshift({id:Date.now().toString(), title:quickInput.value, content:'', tag:'伏笔', date: '', endDate: ''}); saveData(); quickInput.value=''; ElMessage.success('已添加'); }
   };
   const addChapter = () => { formChapter.value={id:Date.now().toString(), title:'', scenes:[], isExpanded:true}; currentChapterIndex.value=-1; chapterDialogVisible.value=true; };
   const editChapter = (c: OutlineChapter) => { if(c.id===INBOX_ID)return; currentChapterIndex.value=normalChapters.value.findIndex(x=>x.id===c.id); formChapter.value=JSON.parse(JSON.stringify(c)); chapterDialogVisible.value=true; };
@@ -205,8 +243,8 @@ export function useOutline() {
   return {
     allChapters, inboxChapter, normalChapters, quickInput, fileInputRef, 
     sceneDialogVisible, chapterDialogVisible, isEditing, formScene, formChapter,
-    // 导出新增的函数
     calendarEvents, calendarCurrentDate, handleDatePicked, changeCalendarMonth,
+    durationDays, // 导出持续天数
     saveData, resetData, exportData, triggerImport, handleImport, handleQuickAdd, addChapter, editChapter, saveChapter, handleChapterCmd, addScene, editScene, saveScene, handleDeleteScene, goToTimeline, formatDateShort, getTagColor, getTagColorLight
   };
 }

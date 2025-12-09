@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: yuntu314/fanfiction/Fanfiction-78cdd7b04a75cf952a739276b92d74580a115934/src/views/Outline/Outline.vue
+fullContent:
 <template>
   <div class="outline-container">
     <div class="toolbar">
@@ -93,6 +97,7 @@
                               <div class="date-badge" @click.stop="goToTimeline(scene.date)">
                                 <el-icon><Calendar /></el-icon>
                                 <span>{{ formatDateShort(scene.date) }}</span>
+                                <span v-if="scene.endDate" style="font-size: 10px; margin-left: 2px;">~</span>
                               </div>
                             </el-tooltip>
                           </div>
@@ -144,16 +149,27 @@
               </el-radio-group>
             </el-form-item>
 
-            <el-form-item label="当前关联日期">
-              <el-tag v-if="formScene.date" type="success" effect="dark" size="large">
-                <el-icon><Calendar /></el-icon> {{ formScene.date }}
-              </el-tag>
+            <el-form-item label="时间跨度">
+              <div v-if="formScene.date">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <el-tag type="success" effect="dark" size="large">
+                    <el-icon><Calendar /></el-icon> {{ formScene.date }}
+                  </el-tag>
+                  <span v-if="formScene.endDate" style="color: #909399;">至</span>
+                  <el-tag v-if="formScene.endDate" type="success" effect="dark" size="large">
+                    <el-icon><Calendar /></el-icon> {{ formScene.endDate }}
+                  </el-tag>
+                </div>
+                <div style="margin-top: 8px; font-weight: bold; color: #409eff;">
+                  <el-icon><Timer /></el-icon> 共 {{ durationDays }} 天
+                </div>
+              </div>
               <el-tag v-else type="info" size="large">未关联日期</el-tag>
+              
               <div style="font-size: 12px; color: #909399; margin-top: 5px;">
-                请在右侧日历点击选择日期
+                在右侧日历点击第一次选择开始，点击第二次选择结束。再次点击重新选择。
               </div>
             </el-form-item>
-
             <el-form-item label="剧情大纲">
               <el-input 
                 v-model="formScene.content" 
@@ -176,12 +192,14 @@
                 <el-button :icon="ArrowRight" @click="changeCalendarMonth(1)" />
               </el-button-group>
             </div>
-            <el-tag type="warning" size="small" effect="plain">点击日期即可选中</el-tag>
+            <el-tag type="warning" size="small" effect="plain">支持范围选择</el-tag>
           </div>
           
           <StoryCalendar 
             :currentDate="calendarCurrentDate"
             :eventsMap="calendarEvents"
+            :rangeStart="formScene.date"
+            :rangeEnd="formScene.endDate"
             @day-click="handleDatePicked"
           />
         </div>
@@ -213,7 +231,7 @@
 <script lang="ts" setup>
 import { 
   Plus, Download, Rank, CaretRight, MoreFilled, Calendar, Right, Delete,  EditPen, Upload,
-  ArrowLeft, ArrowRight 
+  ArrowLeft, ArrowRight, Timer 
 } from '@element-plus/icons-vue';
 import draggable from 'vuedraggable';
 import StoryCalendar from '@/components/StoryCalendar.vue'; 
@@ -222,9 +240,10 @@ import { useOutline } from './outline';
 const {
   allChapters, inboxChapter, normalChapters, quickInput, fileInputRef, 
   sceneDialogVisible, chapterDialogVisible, isEditing, formScene, formChapter, 
-  calendarEvents, calendarCurrentDate, handleDatePicked, changeCalendarMonth, // 引入新方法
+  calendarEvents, calendarCurrentDate, handleDatePicked, changeCalendarMonth, durationDays, // 引入 durationDays
   saveData, resetData, exportData, triggerImport, handleImport, handleQuickAdd, addChapter, editChapter, saveChapter, handleChapterCmd, addScene, editScene, saveScene, handleDeleteScene, goToTimeline, formatDateShort, getTagColor, getTagColorLight
 } = useOutline();
 </script>
 
 <style scoped src="./outline.css"></style>
+}

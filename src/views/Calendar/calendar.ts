@@ -1,22 +1,29 @@
-// src/views/Calendar/calendar.ts
+
 import { ref, computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import type { StoryEvent } from '@/types';
-import { CHARACTER_OPTIONS } from '@/constants/characters';
+// 删除：import { CHARACTER_OPTIONS } from '@/constants/characters';
 import { INITIAL_EVENTS } from '@/constants/events';
+import { useCharacterStore } from '@/stores/characterStore'; // 引入 Store
 
 const STORAGE_SETTINGS_KEY = 'fanfic_calendar_settings';
-const STORAGE_EVENTS_KEY = 'fanfic_calendar_events'; // 新增：事件存储Key
+const STORAGE_EVENTS_KEY = 'fanfic_calendar_events';
 
 export function useCalendar() {
   const route = useRoute();
+  const charStore = useCharacterStore(); // 初始化 Store
 
   // --- 状态 ---
   const viewMode = ref<'calendar' | 'timeline'>('calendar');
   const defaultStartDate = '2020-04-06'; 
   const currentDate = ref(new Date(defaultStartDate));
-  const characterOptions = CHARACTER_OPTIONS;
+  
+  // 修改：不再使用静态常量，而是使用计算属性获取 Store 中的数据
+  // 如果 Store 里的数据还没加载，这里会是空的，但在 onMounted 里我们会调用 loadData
+  const characterOptions = computed(() => charStore.characterOptions);
+
+  const fileInputRef = ref<HTMLInputElement | null>(null);
 
   // 设置弹窗状态
   const settingsVisible = ref(false);
@@ -34,9 +41,8 @@ export function useCalendar() {
   const currentEvent = ref<StoryEvent>({ ...initialEvent }); 
   const formEvent = ref<StoryEvent>({ ...initialEvent }); 
 
-  // --- 数据持久化 (新增) ---
+  // --- 数据持久化 ---
   const saveEventsToStorage = () => {
-    // Map 转 Array 存储
     const data = Array.from(storyEvents.value.entries());
     localStorage.setItem(STORAGE_EVENTS_KEY, JSON.stringify(data));
   };
@@ -49,10 +55,10 @@ export function useCalendar() {
         storyEvents.value = new Map(data);
       } catch (e) {
         console.error('加载事件数据失败', e);
-        loadInitialData(); // 失败则加载默认
+        loadInitialData();
       }
     } else {
-      loadInitialData(); // 无缓存则加载默认
+      loadInitialData();
     }
   };
 
@@ -63,7 +69,7 @@ export function useCalendar() {
       existing.push(event);
       storyEvents.value.set(event.date, existing);
     });
-    saveEventsToStorage(); // 保存初始数据
+    saveEventsToStorage();
   };
 
   const loadSettings = () => {
@@ -156,7 +162,7 @@ export function useCalendar() {
     } else {
         storyEvents.value.delete(day);
     }
-    saveEventsToStorage(); // 保存更改
+    saveEventsToStorage(); 
     if(formEvent.value.id === id) dialogVisible.value = false;
     ElMessage.success('事件已删除');
   };
@@ -177,7 +183,7 @@ export function useCalendar() {
     }
     
     storyEvents.value.set(day, list);
-    saveEventsToStorage(); // 保存更改
+    saveEventsToStorage(); 
     dialogVisible.value = false;
     ElMessage.success('保存成功');
   };
@@ -194,8 +200,76 @@ export function useCalendar() {
 
   const formatDateTitle = (val: Date) => `${val.getFullYear()}年 ${val.getMonth() + 1}月`;
 
+  // --- 导入导出功能 ---
+  const handleExportEvents = () => {
+    if (storyEvents.value.size === 0) {
+      ElMessage.warning('没有数据可导出');
+      return;
+    }
+    try {
+      const dataStr = JSON.stringify(Array.from(storyEvents.value.entries()), null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      const date = new Date().toISOString().slice(0, 10);
+      link.download = `timeline_events_backup_${date}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      ElMessage.success('时间线数据导出成功！');
+    } catch (error) {
+      console.error(error);
+      ElMessage.error('导出失败');
+    }
+  };
+
+  const triggerImportEvents = () => {
+    if (fileInputRef.value) {
+      fileInputRef.value.click();
+    }
+  };
+
+  const handleImportEvents = (event: Event) => {
+    const target = event.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
+
+    const file = target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsedData = JSON.parse(content);
+
+        if (!Array.isArray(parsedData)) {
+          throw new Error('格式错误');
+        }
+
+        ElMessageBox.confirm(
+          `检测到包含数据的导入文件。导入将覆盖当前所有时间线事件，确定吗？`,
+          '确认导入',
+          { type: 'warning', confirmButtonText: '覆盖导入' }
+        ).then(() => {
+          storyEvents.value = new Map(parsedData);
+          saveEventsToStorage();
+          ElMessage.success('时间线数据导入成功！');
+        }).catch(() => {});
+
+      } catch (err) {
+        console.error(err);
+        ElMessage.error('导入失败：文件格式不正确');
+      }
+      target.value = ''; 
+    };
+    reader.readAsText(file, 'utf-8');
+  };
+
   onMounted(() => {
-    loadEventsFromStorage(); // 改为从本地存储加载
+    // 确保组件挂载时，角色数据是最新的
+    charStore.loadData();
+    loadEventsFromStorage();
     loadSettings(); 
     if (route.query.date) {
       const targetDate = new Date(route.query.date as string);
@@ -209,7 +283,8 @@ export function useCalendar() {
   return {
     viewMode, currentDate, characterOptions, dialogVisible, dialogTitle, showDayListInDialog, isEditing,
     storyEvents, currentEvent, formEvent, currentDayEvents, sortedTimelineData, totalEventsCount,
-    settingsVisible, formSettings, openSettings, saveSettings,
-    handleDayClick, quickAddEvent, confirmDeleteEvent, editEvent, deleteEvent, saveEvent, selectDate, formatDateTitle
+    settingsVisible, formSettings, openSettings, saveSettings, fileInputRef,
+    handleDayClick, quickAddEvent, confirmDeleteEvent, editEvent, deleteEvent, saveEvent, selectDate, formatDateTitle,
+    handleExportEvents, triggerImportEvents, handleImportEvents
   };
 }
