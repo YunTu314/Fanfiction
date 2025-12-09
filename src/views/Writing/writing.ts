@@ -1,3 +1,4 @@
+
 import { ref, computed, onMounted, nextTick, watch, reactive, shallowReactive } from 'vue';
 import { ElMessage, ElMessageBox, ElLoading } from 'element-plus';
 
@@ -210,6 +211,12 @@ export function useWriting() {
     return { fileCount, wordCount };
   };
 
+  // --- 新增：获取单个文件字数 ---
+  const getFileWordCount = (node: WritingNode) => {
+    if (node.type !== 'file') return 0;
+    return (contentMap.get(node.id) || '').length;
+  };
+
   // --- 其他通用逻辑 ---
   const getNextChapterTitle = (nodes: WritingNode[] | undefined): string => {
     if (!nodes) return '第1章';
@@ -275,6 +282,62 @@ export function useWriting() {
       if (inputs.length) (inputs[inputs.length - 1] as HTMLElement).focus();
     });
     saveData();
+  };
+
+  // --- 新增：快捷新建下一章功能 ---
+  const handleQuickNextChapter = () => {
+    if (!activeNodeId.value) return;
+
+    // 1. 保存当前内容
+    saveData();
+
+    // 2. 寻找父级节点（卷/文件夹）
+    const findParent = (nodes: WritingNode[], targetId: string): WritingNode | null => {
+      for (const node of nodes) {
+        if (node.children) {
+          if (node.children.some(child => child.id === targetId)) {
+            return node;
+          }
+          const found = findParent(node.children, targetId);
+          if (found) return found;
+        }
+      }
+      return null;
+    };
+
+    const parentNode = findParent(treeData.value, activeNodeId.value);
+
+    if (parentNode && parentNode.children) {
+      // 3. 创建新章节
+      const label = getNextChapterTitle(parentNode.children);
+      const newNode: WritingNode = {
+        id: Date.now().toString(),
+        label: label,
+        type: 'file',
+        isRenaming: true, // 允许用户立即重命名
+        isSaved: true
+      };
+
+      parentNode.children.push(newNode);
+      contentMap.set(newNode.id, ''); // 初始化为空
+
+      // 4. 切换到新章节
+      activeNodeId.value = newNode.id;
+      
+      // 5. 保存
+      saveData();
+      
+      ElMessage.success('已保存当前内容并新建下一章');
+      
+      // 自动聚焦树状图中的重命名输入框
+      nextTick(() => {
+         const inputs = document.querySelectorAll('.custom-tree-node .el-input__inner');
+         if (inputs.length) (inputs[inputs.length - 1] as HTMLElement).focus();
+      });
+
+    } else {
+      ElMessage.warning('无法定位当前章节所属的卷，请手动创建');
+    }
   };
 
   const handleCommand = (command: string, data: WritingNode) => {
@@ -557,6 +620,8 @@ export function useWriting() {
     treeRef, fileInputRef, renameInputRef, isImporting,
     activeContent, secondaryContent, updateActiveContent, updateSecondaryContent,
     handleNodeClick, handleDragEnd, allowDrop, handleCommand, finishRename, handleHeaderAdd, markUnsaved, saveAll,
-    exportCurrentFile, triggerImport, handleFileImport, resetRegex, confirmImport, getFolderStatistics
+    exportCurrentFile, triggerImport, handleFileImport, resetRegex, confirmImport, 
+    getFolderStatistics, getFileWordCount,
+    handleQuickNextChapter // 导出新方法
   };
 }

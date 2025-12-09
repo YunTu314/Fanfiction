@@ -1,3 +1,7 @@
+{
+type: uploaded file
+fileName: yuntu314/fanfiction/Fanfiction-78cdd7b04a75cf952a739276b92d74580a115934/src/views/Writing/Writing.vue
+fullContent:
 <template>
   <div class="writing-layout">
     <div class="sidebar" :style="{ width: sidebarWidth + 'px' }">
@@ -57,7 +61,7 @@
                     {{ data.children ? data.children.length : 0 }}章
                   </template>
                   <template v-else>
-                    {{ getFolderStatistics(data).wordCount }}
+                    {{ getFileWordCount(data) }} 字
                   </template>
                 </span>
 
@@ -99,7 +103,18 @@
       <div class="editor-toolbar">
         <div class="current-info">
           <el-tag v-if="activeNode && !activeNode.isSaved" size="small" type="warning" effect="plain">未保存</el-tag>
-          <span v-else-if="activeNode" class="saved-text"><el-icon><Check /></el-icon> 已保存</span>
+          <el-tag v-else-if="activeNode" size="small" type="success" effect="plain">
+            <el-icon><Check /></el-icon> 已保存
+          </el-tag>
+          <template v-if="activeNode">
+            <el-divider direction="vertical" />
+            <span style="font-size: 12px; color: #909399;">{{ activeContent.length }} 字</span>
+            
+            <el-divider direction="vertical" />
+            <el-tooltip content="保存当前并新建下一章" placement="bottom">
+              <el-button link type="primary" size="small" icon="Plus" @click="handleQuickNextChapter">新建下一章</el-button>
+            </el-tooltip>
+          </template>
         </div>
         
         <div class="editor-controls">
@@ -203,7 +218,7 @@
 
 <script setup lang="ts">
 import { 
-  Folder, Document, MoreFilled, FolderAdd, DocumentAdd, Upload, Download, Check, Sunny
+  Folder, Document, MoreFilled, FolderAdd, DocumentAdd, Upload, Download, Check, Sunny, Plus
 } from '@element-plus/icons-vue';
 import { useWriting } from './writing';
 
@@ -214,8 +229,12 @@ const {
   // 新增/修改的状态
   activeContent, secondaryContent, updateActiveContent, updateSecondaryContent,
   handleNodeClick, handleDragEnd, allowDrop, handleCommand, finishRename, handleHeaderAdd, markUnsaved, saveAll,
-  exportCurrentFile, triggerImport, handleFileImport, resetRegex, confirmImport,getFolderStatistics
+  exportCurrentFile, triggerImport, handleFileImport, resetRegex, confirmImport, 
+  getFolderStatistics,
+  getFileWordCount,
+  handleQuickNextChapter
 } = useWriting();
 </script>
 
 <style scoped src="./writing.css"></style>
+}
